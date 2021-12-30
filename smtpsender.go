@@ -1,0 +1,82 @@
+// Copyright (C) 2021 Creditor Corp. Group.
+// See LICENSE for copying information.
+
+package mail
+
+import (
+	"crypto/tls"
+	"net"
+	"net/smtp"
+
+	"github.com/zeebo/errs"
+)
+
+// ensures that SMTPSender implements Sender.
+var _ Sender = (*SMTPSender)(nil)
+
+// SMTPSender is smtp sender.
+type SMTPSender struct {
+	ServerAddress string
+
+	From Address
+	Auth smtp.Auth
+}
+
+// FromAddress returns address of sender from.
+func (sender *SMTPSender) FromAddress() Address {
+	return sender.From
+}
+
+// SendEmail sends email message to the given recipient.
+func (sender *SMTPSender) SendEmail(msg *Message) error {
+	host, _, _ := net.SplitHostPort(sender.ServerAddress)
+
+	client, err := smtp.Dial(sender.ServerAddress)
+	if err != nil {
+		return err
+	}
+	// close underlying connection.
+	defer func() {
+		err = errs.Combine(err, client.Close())
+	}()
+
+	// send smtp hello or echo msg and establish connection over tls.
+	err = client.StartTLS(&tls.Config{ServerName: host})
+	if err != nil {
+		return err
+	}
+
+	err = client.Auth(sender.Auth)
+	if err != nil {
+		return err
+	}
+
+	err = client.Mail(sender.From.Address)
+	if err != nil {
+		return err
+	}
+
+	// add recipients.
+	for _, to := range msg.To {
+		err = client.Rcpt(to.Address)
+		if err != nil {
+			return err
+		}
+	}
+
+	data, err := client.Data()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errs.Combine(err, data.Close())
+	}()
+
+	_, err = data.Write(msg.Bytes())
+	if err != nil {
+		return err
+	}
+
+	_ = client.Quit()
+	return nil
+}
