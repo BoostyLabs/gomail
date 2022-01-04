@@ -4,8 +4,9 @@
 package mail
 
 import (
-	"errors"
 	"net/smtp"
+
+	"github.com/zeebo/errs"
 )
 
 // LoginAuth implements LOGIN authentication mechanism.
@@ -17,7 +18,7 @@ type LoginAuth struct {
 // Start begins an authentication with a server.
 func (auth LoginAuth) Start(server *smtp.ServerInfo) (proto string, toServer []byte, err error) {
 	if !server.TLS {
-		return "", nil, errors.New("unencrypted connection")
+		return "", nil, errs.New("unencrypted connection")
 	}
 	return "LOGIN", nil, nil
 }
@@ -32,7 +33,7 @@ func (auth LoginAuth) Next(fromServer []byte, more bool) (toServer []byte, err e
 		case "Password:":
 			return []byte(auth.Password), nil
 		default:
-			return nil, errors.New("unknown question")
+			return nil, errs.New("unknown question")
 		}
 	}
 	return nil, nil

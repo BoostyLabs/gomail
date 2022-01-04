@@ -29,6 +29,9 @@ func (sender *SMTPSender) FromAddress() Address {
 
 // SendEmail sends email message to the given recipient.
 func (sender *SMTPSender) SendEmail(msg *Message) error {
+	// TODO: validate address before initializing SMTPSender
+	// suppress error because address should be validated
+	// before creating SMTPSender.
 	host, _, _ := net.SplitHostPort(sender.ServerAddress)
 
 	client, err := smtp.Dial(sender.ServerAddress)
@@ -40,7 +43,7 @@ func (sender *SMTPSender) SendEmail(msg *Message) error {
 		err = errs.Combine(err, client.Close())
 	}()
 
-	// send smtp hello or echo msg and establish connection over tls.
+	// send smtp hello or ehlo msg and establish connection over tls.
 	err = client.StartTLS(&tls.Config{ServerName: host})
 	if err != nil {
 		return err
@@ -77,6 +80,8 @@ func (sender *SMTPSender) SendEmail(msg *Message) error {
 		return err
 	}
 
+	// send quit msg to stop gracefully returns err on
+	// success but we don't really care about the result.
 	_ = client.Quit()
 	return nil
 }
