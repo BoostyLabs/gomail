@@ -1,8 +1,8 @@
-##Installation
+## Installation
 ___
 `go get github.com/BoostyLabs/gomail`
 
-##Example
+## Example
 ___
 
-TODO: add exaple here.
+TODO: add example here.
