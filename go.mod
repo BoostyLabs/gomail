@@ -1,4 +1,4 @@
-module boostylabs/gomail
+module github.com/BoostyLabs/gomail
 
 go 1.15
 
